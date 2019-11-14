@@ -26,7 +26,7 @@ public final class NoteInfo implements Parcelable {
         return mTopic;
     }
 
-    public void setCourse(TopicInfo course) {
+    public void setTopic(TopicInfo course) {
         mTopic = course;
     }
 

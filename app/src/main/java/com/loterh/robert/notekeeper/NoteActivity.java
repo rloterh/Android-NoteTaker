@@ -15,8 +15,13 @@ import android.widget.Spinner;
 import java.util.List;
 
 public class NoteActivity extends AppCompatActivity {
-    public static final String NOTE_INFO = "com.loterh.robert.NoteTaker.NOTE_INFO";
+    public static final String NOTE_POSITION = "com.loterh.robert.NoteTaker.NOTE_POSITION";
+    public static final int POSITION_NOT_SET = -1;
     private NoteInfo mNoteInfo;
+    private boolean mIsNewNote;
+    private Spinner mSpinnerTopics;
+    private EditText mTextNoteTitle;
+    private EditText mTextNoteText;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -25,23 +30,36 @@ public class NoteActivity extends AppCompatActivity {
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        Spinner spinnerTopics = (Spinner) findViewById(R.id.spinner_topics);
+        mSpinnerTopics = (Spinner) findViewById(R.id.spinner_topics);
         List<TopicInfo> topics = DataManager.getInstance().getTopics();
         ArrayAdapter<TopicInfo> adapterTopics = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, topics);
-        spinnerTopics.setAdapter(adapterTopics);
+        mSpinnerTopics.setAdapter(adapterTopics);
 
         readDisplayStateValues();
-        EditText textNoteTitle = findViewById(R.id.text_note_title);
-        EditText textNoteText = findViewById(R.id.text_note_text);
+        mTextNoteTitle = findViewById(R.id.text_note_title);
+        mTextNoteText = findViewById(R.id.text_note_text);
 
-        displayNote(spinnerTopics, textNoteTitle, textNoteText);
+        if (!mIsNewNote)
+            displayNote(mSpinnerTopics, mTextNoteTitle, mTextNoteText);
 
 
     }
 
     private void readDisplayStateValues() {
         Intent intent = getIntent();
-        mNoteInfo = intent.getParcelableExtra(NOTE_INFO);
+        int position = intent.getIntExtra(NOTE_POSITION, POSITION_NOT_SET);
+        mIsNewNote = position == POSITION_NOT_SET;
+        if (!mIsNewNote)
+            mNoteInfo = DataManager.getInstance().getNotes().get(position);
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        saveNote();
+    }
+
+    private void saveNote() {
     }
 
     private void displayNote(Spinner spinnerTopics, EditText textNoteTitle, EditText textNoteText) {
@@ -67,10 +85,24 @@ public class NoteActivity extends AppCompatActivity {
         int id = item.getItemId();
 
         //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
+        if (id == R.id.action_send_mail) {
+            sendEmail();
             return true;
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+
+    private void sendEmail() {
+        TopicInfo topicInfo = (TopicInfo) mSpinnerTopics.getSelectedItem();
+        String subject = mTextNoteTitle.getText().toString();
+        String text = "Checkout what I learned in the at the during the workshop \" " + topicInfo.getTitle() + "\"\n" + mTextNoteText.getText();
+        Intent intent = new Intent(Intent.ACTION_SEND);
+        intent.setType("message/rfc2822");
+        intent.putExtra(Intent.EXTRA_SUBJECT, subject);
+        intent.putExtra(Intent.EXTRA_TEXT, text);
+        startActivity(intent);
+
     }
 }
